@@ -10,7 +10,26 @@
           <#list queryColumns as column>
             <#if column.queryType != 'BetWeen'>
         <label class="el-form-item-label"><#if column.remark != ''>${column.remark}<#else>${column.changeColumnName}</#if></label>
+              <#if column.formType = 'Radio'>
+                <#if (column.dictName)?? && (column.dictName)!="">
+        <el-radio v-model="query.${column.changeColumnName}" v-for="item in dict.${column.dictName}" :key="item.id" :label="item.value">{{ item.label }}</el-radio>
+                <#else>
+                  未设置字典，请手动设置 Radio
+                </#if>
+              <#elseif column.formType = 'Select'>
+                <#if (column.dictName)?? && (column.dictName)!="">
+        <el-select v-model="query.${column.changeColumnName}" clearable filterable placeholder="请选择">
+          <el-option v-for="item in dict.${column.dictName}"
+                               :key="item.id"
+                               :label="item.label"
+                               :value="item.value" />
+        </el-select>
+                <#else>
+                  未设置字典，请手动设置 Select
+                </#if>
+              <#else>
         <el-input v-model="query.${column.changeColumnName}" clearable placeholder="<#if column.remark != ''>${column.remark}<#else>${column.changeColumnName}</#if>" style="width: 185px;" class="filter-item" @keyup.enter.native="crud.toQuery" />
+              </#if>
             </#if>
           </#list>
         </#if>
@@ -119,7 +138,6 @@ import rrOperation from '@crud/RR.operation'
 import crudOperation from '@crud/CRUD.operation'
 import udOperation from '@crud/UD.operation'
 import pagination from '@crud/Pagination'
-
 
 const defaultForm = { <#if columns??><#list columns as column>${column.changeColumnName}: null<#if column_has_next>, </#if></#list></#if> }
 export default {

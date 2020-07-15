@@ -39,6 +39,12 @@ public class ${className}QueryCriteria{
 <#if queryColumns??>
     <#list queryColumns as column>
 
+<#if (column.dictName)?? && (column.dictName)!="">
+    /** 精确 */
+    @Query
+    private ${column.columnType} ${column.changeColumnName};
+    <#continue>
+</#if>
 <#if column.queryType = '='>
     /** 精确 */
     @Query
