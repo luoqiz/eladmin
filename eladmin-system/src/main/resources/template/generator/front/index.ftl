@@ -51,7 +51,7 @@
       <!--如果想在工具栏加入更多按钮，可以使用插槽方式， slot = 'left' or 'right'-->
       <crudOperation :permission="permission" />
       <!--表单组件-->
-      <el-dialog :close-on-click-modal="false" :before-close="crud.cancelCU" :visible.sync="crud.status.cu > 0" :title="crud.status.title" width="500px">
+      <el-dialog :close-on-click-modal="false" :before-close="crud.cancelCU" :visible.sync="crud.status.cu > 0" :title="crud.status.title" width="500px" @opened="show(form)" @closed="hide()">
         <el-form ref="form" :model="form" <#if isNotNullColumns??>:rules="rules"</#if> size="small" label-width="80px">
     <#if columns??>
       <#list columns as column>
@@ -79,6 +79,8 @@
               <#else>
             未设置字典，请手动设置 Select
               </#if>
+            <#elseif column.formType = 'wangeditor'>
+            <div ref="${column.changeColumnName}editor" class="text" style="width: auto;height: 400px;" />
             <#else>
             <el-date-picker v-model="form.${column.changeColumnName}" type="datetime" style="width: 370px;" />
             </#if>
@@ -97,15 +99,23 @@
         <el-table-column type="selection" width="55" />
         <#if columns??>
             <#list columns as column>
-            <#if column.columnShow>
-          <#if (column.dictName)?? && (column.dictName)!="">
+              <#if column.columnShow>
+                <#if (column.dictName)?? && (column.dictName)!="">
         <el-table-column prop="${column.changeColumnName}" label="<#if column.remark != ''>${column.remark}<#else>${column.changeColumnName}</#if>">
           <template slot-scope="scope">
             {{ dict.label.${column.dictName}[scope.row.${column.changeColumnName}] }}
           </template>
         </el-table-column>
-          <#elseif column.columnType != 'Timestamp'>
+                <#elseif column.columnType != 'Timestamp'>
+                  <#if column.formType = 'wangeditor'>
+        <el-table-column prop="${column.changeColumnName}" label="<#if column.remark != ''>${column.remark}<#else>${column.changeColumnName}</#if>">
+          <template slot-scope="scope">
+            <div v-html="scope.row.${column.changeColumnName}" />
+          </template>
+        </el-table-column>
+                  <#else>
         <el-table-column prop="${column.changeColumnName}" label="<#if column.remark != ''>${column.remark}<#else>${column.changeColumnName}</#if>" />
+                  </#if>
                 <#else>
         <el-table-column prop="${column.changeColumnName}" label="<#if column.remark != ''>${column.remark}<#else>${column.changeColumnName}</#if>">
           <template slot-scope="scope">
@@ -113,7 +123,7 @@
           </template>
         </el-table-column>
                 </#if>
-            </#if>
+              </#if>
             </#list>
         </#if>
         <el-table-column v-permission="['admin','${changeClassName}:edit','${changeClassName}:del']" label="操作" width="150px" align="center">
@@ -184,6 +194,42 @@ export default {
     // 钩子：在获取表格数据之前执行，false 则代表不获取数据
     [CRUD.HOOK.beforeRefresh]() {
       return true
+    },
+    show(form) {
+      const _this = this
+      <#if columns??>
+      <#list columns as column>
+      <#if column.formType = 'wangeditor'>
+      var ${column.changeColumnName}editor = new E(this.$refs.${column.changeColumnName}editor)
+      // 自定义菜单配置
+      ${column.changeColumnName}editor.customConfig.zIndex = 1
+      ${column.changeColumnName}editor.customConfig.uploadImgShowBase64 = true
+      // 文件上传
+      ${column.changeColumnName}editor.customConfig.customUploadImg = function(files, insert) {
+        // files 是 input 中选中的文件列表
+        // insert 是获取图片 url 后，插入到编辑器的方法
+        files.forEach(image => {
+          upload(_this.imagesUploadApi, image).then(data => {
+            insert(data.data.url)
+          })
+        })
+      }
+      ${column.changeColumnName}editor.customConfig.onchange = (html) => {
+        console.log(html)
+        // this.editorContent = html
+        // this.form.content = html
+        form.content = html
+      }
+      ${column.changeColumnName}editor.create()
+      // 初始化数据
+      ${column.changeColumnName}editor.txt.html(form.content)
+      </#if>
+      </#list>
+      </#if>
+    },
+    hide() {
+      this.$refs.editor.innerHTML = ''
+      this.editor = null
     }
   }
 }
